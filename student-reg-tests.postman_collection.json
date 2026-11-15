@@ -1,0 +1,4057 @@
+{
+  "_": {
+    "postman_id": "ce72e399-3a58-4e9f-9a80-dd0838b2e6b8"
+  },
+  "item": [
+    {
+      "id": "9240e70b-ed06-475c-99ff-0727ae50a210",
+      "name": "00 Fetch live OpenAPI contract",
+      "request": {
+        "url": {
+          "path": [
+            "v3",
+            "api-docs"
+          ],
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "query": [],
+          "variable": []
+        },
+        "method": "GET"
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "id": "3714d4fe-ecec-4255-9e3f-0e741f99d56b",
+            "type": "text/javascript",
+            "packages": {},
+            "exec": [
+              "pm.collectionVariables.set('contract', pm.response.text());"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "4a7151ba-1ebc-402e-b9de-9db7a13b1852",
+      "name": "AUTOMATED CONTRACT SUITE - Run in order",
+      "description": {
+        "content": "Run all requests in order. First fetches live OpenAPI contract, then 37 API tests. Unexpected failures and violations remain failing.",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "82a02c77-4d6c-46e7-91e9-7ecd0786af74",
+          "name": "01 Create test student",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "students"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Automated Contract Student\",\n  \"major\": \"Computer Science\",\n  \"gpa\": 3.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "d2f5ffe1-3472-4971-ae86-4a9fb6135372",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201 expected\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented StudentResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/StudentResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.StudentResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});",
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && responsePayload && Number.isInteger(responsePayload.id)) pm.collectionVariables.set(\"autoStudentId\",String(responsePayload.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "63fa72d7-2de9-4c12-8bac-ac23ef8c3028",
+          "name": "02 GET created student",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "{{autoStudentId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "67c68128-934d-4787-8ff6-2174b195f740",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented StudentResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/StudentResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.StudentResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});",
+                  "pm.test(\"Student ID matches\",()=>pm.expect(responsePayload.id).to.equal(Number(pm.collectionVariables.get(\"autoStudentId\"))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "fe2f2c61-879e-4d97-ba07-7c2b07e5f2cc",
+          "name": "03 GET all students",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "students"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "e8392482-a654-416d-8717-3d429f04b794",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is array\", () => pm.expect(responsePayload).to.be.an(\"array\"));",
+                  "pm.test(\"Matches documented StudentResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/StudentResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.StudentResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "8a70271f-a02e-45c4-bc38-7d2a073ecf77",
+          "name": "04 GET students filtered by major",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "students"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "key": "major",
+                  "value": "Computer%20Science"
+                }
+              ],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "8b8fe664-559b-45b7-b1e0-1d6e429c13fe",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is array\", () => pm.expect(responsePayload).to.be.an(\"array\"));",
+                  "pm.test(\"Matches documented StudentResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/StudentResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.StudentResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});",
+                  "pm.test(\"Major filter respected\",()=>{pm.expect(responsePayload).to.be.an(\"array\");responsePayload.forEach(s=>pm.expect(s.major).to.equal(\"Computer Science\"));});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "1a909986-c807-4449-8c41-eb535027d752",
+          "name": "05 GET missing student",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "999999999"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "fb9c4b9e-95f7-4477-8102-dea2d4d322e5",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404 expected\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "ba583c05-505c-4ab6-800a-63e4684c57f8",
+          "name": "06 PUT update student",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "{{autoStudentId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Automated Updated Student\",\n  \"major\": \"Software Engineering\",\n  \"gpa\": 3.9\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "de82cb9a-a551-4dd2-bae2-68e2f21295b2",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented StudentResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/StudentResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.StudentResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "e3c21a92-3dde-45aa-833d-9ba396a4a84c",
+          "name": "07 PUT invalid student GPA",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "{{autoStudentId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Invalid GPA\",\n  \"major\": \"Computer Science\",\n  \"gpa\": 5.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "9a11b6d5-3292-41f7-b918-22c63f08788e",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400 expected\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "2b8b7182-ad7b-4a4a-aed7-d1111e2fd64b",
+          "name": "08 PUT nonexistent student",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "999999999"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ghost Student\",\n  \"major\": \"Computer Science\",\n  \"gpa\": 3.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "0b6bfdcc-18a3-42ad-ad18-98a7f17abcab",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404 expected\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "9cd594bc-3eb9-45f3-a979-2af7c4a7450b",
+          "name": "09 POST invalid student GPA",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "students"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Invalid GPA\",\n  \"major\": \"Computer Science\",\n  \"gpa\": -1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "b89c8c16-d8c1-4922-9895-83bd9404e287",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400 expected\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "1cd05ec5-16ca-4499-8980-9e51c193cc5a",
+          "name": "10 GET student courses",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "{{autoStudentId}}",
+                "courses"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "c2dcbd74-6f36-43b1-8ab0-9abd96273ddf",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is array\", () => pm.expect(responsePayload).to.be.an(\"array\"));",
+                  "pm.test(\"Matches documented CourseResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/CourseResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.CourseResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "a5532635-12c4-418b-b4b7-1c6d21370b50",
+          "name": "11 Create test course",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Automated Contract Course\",\n  \"instructor\": 1,\n  \"maxSize\": 2,\n  \"room\": \"MCS 339\",\n  \"roster\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "0c0604a7-bdf8-4715-a56a-f6d1664b2f70",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201 expected\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented CourseResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/CourseResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.CourseResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});",
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && responsePayload && Number.isInteger(responsePayload.id)) pm.collectionVariables.set(\"autoCourseId\",String(responsePayload.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "caa1d335-0e94-4afe-b618-f036b2e63fe7",
+          "name": "12 GET created course",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "{{autoCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "5d2177ac-7040-4d24-9e75-7be9ea0b648a",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented CourseResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/CourseResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.CourseResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "b63705fb-6985-4c65-88ae-d26511761dee",
+          "name": "13 GET all courses",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "28dbca4b-aa0f-4308-9d31-e071562611b8",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is array\", () => pm.expect(responsePayload).to.be.an(\"array\"));",
+                  "pm.test(\"Matches documented CourseResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/CourseResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.CourseResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "3200011c-2a35-42f0-9b3b-105d381e23ad",
+          "name": "14 GET courses filtered by instructor",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [
+                {
+                  "key": "instructorId",
+                  "value": "1"
+                }
+              ],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "ca53539c-5565-4593-b37b-7ec6b405663e",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is array\", () => pm.expect(responsePayload).to.be.an(\"array\"));",
+                  "pm.test(\"Matches documented CourseResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/CourseResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.CourseResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});",
+                  "pm.test(\"Instructor filter respected\",()=>{pm.expect(responsePayload).to.be.an(\"array\");responsePayload.forEach(c=>pm.expect(c.instructorId).to.equal(1));});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "2020e0b3-b767-4ec7-8f9e-8c9f9d84af79",
+          "name": "15 GET missing course",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "999999999"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "834aa204-b782-49fb-a997-006e1bfe70f7",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404 expected\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "76ef43df-d30d-425f-b390-32fb9962b066",
+          "name": "16 PUT update course",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "{{autoCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Automated Updated Course\",\n  \"instructor\": 1,\n  \"maxSize\": 2,\n  \"room\": \"MCS 340\",\n  \"roster\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "63ae2451-cad0-470b-bc98-ab08b160fc39",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented CourseResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/CourseResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.CourseResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "6bd71714-10e0-4e31-ac44-22f3575fbb78",
+          "name": "17 PUT invalid course capacity",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "{{autoCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Invalid Capacity\",\n  \"instructor\": 1,\n  \"maxSize\": -1,\n  \"room\": \"MCS 340\",\n  \"roster\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "ec70c846-e2ce-4d0f-a0c2-7bf17d2d2ea7",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400 expected\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "db8ce4dd-5cc0-4080-9f00-87da81c05f52",
+          "name": "18 PUT missing course",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "999999999"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ghost Course\",\n  \"instructor\": 1,\n  \"maxSize\": 2,\n  \"room\": \"MCS 340\",\n  \"roster\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "175aef5f-c052-4b83-86ac-091b8b83e8c4",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404 expected\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "a4aa08ba-545f-41b2-81c1-4fa6995dfff0",
+          "name": "19 POST invalid course capacity",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Invalid Capacity\",\n  \"instructor\": 1,\n  \"maxSize\": 0,\n  \"room\": \"MCS 339\",\n  \"roster\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "b59ee4f9-43be-4289-969f-b3aa8b6874fe",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400 expected\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "e7741114-da6a-42be-a895-4fe900f1732c",
+          "name": "20 POST course with missing student",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Unknown Roster Student\",\n  \"instructor\": 1,\n  \"maxSize\": 2,\n  \"room\": \"MCS 339\",\n  \"roster\": [\n    999999999\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "2e0bb24b-e7ec-4f53-906e-7e7fada1b9a4",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404 expected\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "9913b406-553e-4294-9f15-828fd767999c",
+          "name": "21 GET initial enrollment",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "getEnrollment",
+                "{{autoCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "161affa0-66ef-46ba-ac17-9a78e17503a0",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is nonnegative integer\", () => { pm.expect(responsePayload).to.be.a(\"number\"); pm.expect(Number.isInteger(responsePayload)).to.be.true; pm.expect(responsePayload).to.be.at.least(0); });",
+                  "pm.test(\"New course enrollment is zero\",()=>pm.expect(responsePayload).to.equal(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "86dde8fa-6fee-4abc-a737-31e39755f027",
+          "name": "22 Add student to course",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "addStudent",
+                "{{autoCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{{autoStudentId}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "2263e5f1-d6ae-4d1c-bbc2-ae0d375d7b61",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented CourseResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/CourseResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.CourseResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "e7b7866b-1417-44db-b1d3-74643bc91715",
+          "name": "23 Enrollment increases to one",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "getEnrollment",
+                "{{autoCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "93a60a41-b0b7-494f-bef4-7b3850cc3d55",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is nonnegative integer\", () => { pm.expect(responsePayload).to.be.a(\"number\"); pm.expect(Number.isInteger(responsePayload)).to.be.true; pm.expect(responsePayload).to.be.at.least(0); });",
+                  "pm.test(\"Enrollment increases to one\",()=>pm.expect(responsePayload).to.equal(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "9731e843-2096-4e70-ae2e-2fe8910034c6",
+          "name": "24 Add duplicate student",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "addStudent",
+                "{{autoCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{{autoStudentId}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "63ce34b7-9bdc-4cc7-b780-89ac258da07b",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409 expected\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "14f53425-4479-44cd-9600-ce8ec9ab2abc",
+          "name": "25 Add missing student",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "addStudent",
+                "{{autoCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "999999999",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "e41f34a2-365a-4525-8310-ca37e34c8cb4",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404 expected\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "ccd3aa2a-5c60-4d92-8568-c6cdfab2188c",
+          "name": "26 Add student to missing course",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "addStudent",
+                "999999999"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{{autoStudentId}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "04c0be17-24bc-4fb5-b3f5-26a9ce9bba5f",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404 expected\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "23991cf2-48f0-4404-8515-9222fd811c5b",
+          "name": "27 Remove student from course",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "removeStudent",
+                "{{autoCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"studentId\": {{autoStudentId}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "6191715a-1aa5-458d-a2ee-6401a3cf4298",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented CourseResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/CourseResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.CourseResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "4c166a31-6c9c-4c29-bb0f-e1be367afe75",
+          "name": "28 Enrollment returns to zero",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "getEnrollment",
+                "{{autoCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "1708c028-b469-4533-a04a-b2c91a902fb3",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is nonnegative integer\", () => { pm.expect(responsePayload).to.be.a(\"number\"); pm.expect(Number.isInteger(responsePayload)).to.be.true; pm.expect(responsePayload).to.be.at.least(0); });",
+                  "pm.test(\"Enrollment returns to zero\",()=>pm.expect(responsePayload).to.equal(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "ac044669-ee5b-40f8-bf3b-c0dd8791e7b1",
+          "name": "29 Remove student not on roster",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "removeStudent",
+                "{{autoCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"studentId\": {{autoStudentId}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "a85def45-010d-4e91-9a5d-0d2a0399d91d",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409 expected\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "b9ac9824-dc4a-4514-92b3-db414ebf2863",
+          "name": "30 Remove student from missing course",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "removeStudent",
+                "999999999"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"studentId\": {{autoStudentId}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "7a687906-d8e7-43e9-a597-f04fc56e5d8d",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404 expected\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "97169799-f9c3-4be6-9b8f-afe2597586f4",
+          "name": "31 GET enrollment for missing course",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "getEnrollment",
+                "999999999"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "f2a6920e-0d52-4b24-b40e-e3c800cae3b6",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404 expected\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "9e75205b-4a35-45b6-9d04-caba2ce1ad46",
+          "name": "32 DELETE test course",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "{{autoCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "a20a08fe-0104-424f-a09e-7a69aa48a27c",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204 expected\", () => pm.response.to.have.status(204));",
+                  "pm.test(\"Empty response body\", () => pm.expect(pm.response.text()).to.be.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "b889f684-8cea-43c7-9e9a-cf6aafecbdb1",
+          "name": "33 GET deleted course",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "{{autoCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "684dff6a-0f55-4dfb-91f9-80c9f66d48c2",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404 expected\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "c207bb26-794d-4d84-b047-c029c7c40a12",
+          "name": "34 DELETE missing course",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "999999999"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "46c6d248-5e7f-4508-9324-9a1be76eea7b",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404 expected\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "d6e7c0e2-9991-40c9-b058-c917f896a7f0",
+          "name": "35 DELETE test student",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "{{autoStudentId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "816b8e0c-f023-4ffe-b69f-eb40e7e59af4",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204 expected\", () => pm.response.to.have.status(204));",
+                  "pm.test(\"Empty response body\", () => pm.expect(pm.response.text()).to.be.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "efca0b60-3af4-4ca1-8de9-e04e5a397516",
+          "name": "36 GET deleted student",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "{{autoStudentId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "4bd58edd-ac56-4d84-a88f-c5dc84109009",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404 expected\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "531fc39f-f979-44a3-9f84-800522f1b9e7",
+          "name": "37 DELETE missing student",
+          "request": {
+            "description": {
+              "content": "",
+              "type": "text/plain"
+            },
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "999999999"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "a13c25fd-79b6-4b31-a12a-de856e239062",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404 expected\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"JSON Content-Type\", () => pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.include(\"application/json\"));",
+                  "var responsePayload; try { responsePayload = pm.response.json(); } catch(e) { responsePayload = undefined; }",
+                  "pm.test(\"Valid JSON body\", () => pm.expect(responsePayload).to.not.equal(undefined));",
+                  "pm.test(\"Response is object\", () => { pm.expect(responsePayload).to.be.an(\"object\"); pm.expect(responsePayload).to.not.be.an(\"array\"); });",
+                  "pm.test(\"Matches documented ErrorResponse schema\", () => {\n  const specText = pm.collectionVariables.get(\"contract\");\n  pm.expect(specText, \"Run Fetch Contract first\").to.be.a(\"string\").and.not.empty;\n  const spec = JSON.parse(specText);\n  const Ajv = require('ajv');\n  const ajv = new Ajv({allErrors:true,unknownFormats:'ignore',schemaId:'auto',validateSchema:false,logger:false});\n  ajv.addSchema(spec,'spec');\n  const entries = Array.isArray(responsePayload) ? responsePayload : [responsePayload];\n  entries.forEach((entry,i) => {\n    const valid = ajv.validate({$ref:'spec#/components/schemas/ErrorResponse'},entry);\n    pm.expect(valid, 'Item '+i+': '+ajv.errorsText()).to.be.true;\n    const allowed = spec.components.schemas.ErrorResponse.properties || {};\n    pm.expect(Object.keys(entry).filter(k=>!(k in allowed)), 'Undocumented fields in item '+i).to.be.empty;\n  });\n});"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "event": []
+    },
+    {
+      "id": "63d4dacd-96e9-4090-ace2-e9ae10275606",
+      "name": "WORKFLOW 1 - Student CRUD (6 sequential requests)",
+      "description": {
+        "content": "Automated, sequential workflow; dynamic IDs from earlier steps.",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "6bfc54b5-4ced-434c-add2-a2ba32b63987",
+          "name": "W1.1 Create dynamic student",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"{{wfStudentName}}\",\"major\":\"Computer Science\",\"gpa\":3.1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "31b3b6ad-4fe1-4fcd-87f2-a820b1b9dabd",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"wfStudentName\",\"Workflow Student \"+Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "670533e2-4cf8-4f75-bae1-7e79b385a494",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 201 expected\", () => pm.response.to.have.status(201));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"JSON object response\", () => { pm.expect(data).to.be.an(\"object\"); pm.expect(data).to.not.equal(null); });",
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && data && Number.isInteger(data.id)) pm.collectionVariables.set(\"wfStudentId\", String(data.id));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "359a762f-bb2e-4a56-9d83-900004d18c11",
+          "name": "W1.2 Read new student",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "{{wfStudentId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "228c2968-36d7-463f-bf62-dc78d55e255c",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"JSON response exists\", () => pm.expect(data).to.not.equal(undefined));",
+                  "pm.test(\"Created student ID matches\", () => pm.expect(data.id).to.equal(Number(pm.collectionVariables.get(\"wfStudentId\"))));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "469b25db-363a-46f2-a349-280498f7fb70",
+          "name": "W1.3 Update student GPA",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "{{wfStudentId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"{{wfStudentName}}\",\"major\":\"Computer Science\",\"gpa\":3.8}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "f08c1c98-403e-432d-b92a-ac6f70152161",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "ba51ebc1-783f-430a-837a-aa3a1c3f7ab5",
+          "name": "W1.4 Verify updated GPA",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "{{wfStudentId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "322868e0-4b86-4a00-ab9b-5cba53fb4cf3",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"JSON response exists\", () => pm.expect(data).to.not.equal(undefined));",
+                  "pm.test(\"Student GPA updated\", () => pm.expect(data.gpa).to.equal(3.8));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "69a828fa-6724-4b79-9dd1-008cf165688f",
+          "name": "W1.5 Delete student",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "{{wfStudentId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "fcde5c76-61ee-4f39-9f36-e8025a254a5f",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204 expected\", () => pm.response.to.have.status(204));",
+                  "pm.test(\"Empty body after deletion\", () => pm.expect(pm.response.text()).to.be.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "894a70a8-3cfa-4490-99a9-c1c076e6bdcb",
+          "name": "W1.6 Verify deletion returns 404",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "{{wfStudentId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "974012e6-6b4c-4185-af05-7d79ad94939b",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 404 expected\", () => pm.response.to.have.status(404));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"Student missing after deletion\", () => pm.expect(data).to.be.an(\"object\"));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "event": []
+    },
+    {
+      "id": "ec954fe6-b500-4af8-a15c-db731be504a1",
+      "name": "WORKFLOW 2 - Course CRUD (6 sequential requests)",
+      "description": {
+        "content": "Automated, sequential workflow; dynamic IDs from earlier steps.",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "af61e423-f08b-4223-be5f-863ad53e0ad4",
+          "name": "W2.1 Create dynamic course",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"{{wfCourseName}}\",\"instructor\":1,\"maxSize\":3,\"room\":\"MCS 339\",\"roster\":[]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "def0e700-b7d2-4ded-a8cc-b7d88a1702b5",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"wfCourseName\",\"Workflow Course \"+Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "2df2b115-7bdd-449c-ad8d-cb07a03a8771",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 201 expected\", () => pm.response.to.have.status(201));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"JSON object response\", () => { pm.expect(data).to.be.an(\"object\"); pm.expect(data).to.not.equal(null); });",
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && data && Number.isInteger(data.id)) pm.collectionVariables.set(\"wfCourseId\", String(data.id));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "5cbe8caf-3de1-467f-9f8f-12159e446e14",
+          "name": "W2.2 Read created course",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "{{wfCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "a4302f82-2634-431a-81ba-75e7ab1eb444",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"JSON response exists\", () => pm.expect(data).to.not.equal(undefined));",
+                  "pm.test(\"Created course ID matches\", () => pm.expect(data.id).to.equal(Number(pm.collectionVariables.get(\"wfCourseId\"))));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "b3f8ec37-823d-4fef-8ba9-6b7b6017cee4",
+          "name": "W2.3 Update course room",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "{{wfCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"{{wfCourseName}}\",\"instructor\":1,\"maxSize\":3,\"room\":\"MCS 340\",\"roster\":[]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "a9d60a70-8b77-426b-99d1-f672a57da4fd",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "00c451aa-86a0-4f29-ad37-63eefe93be61",
+          "name": "W2.4 Verify updated room",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "{{wfCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "d9306d10-47aa-40b5-b68d-95aacceea2d7",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"JSON response exists\", () => pm.expect(data).to.not.equal(undefined));",
+                  "pm.test(\"Course room updated\", () => pm.expect(data.room).to.equal(\"MCS 340\"));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "1883a00b-ef0d-4e97-b5da-23de8d761de3",
+          "name": "W2.5 Delete course",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "{{wfCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "e7a861c3-00e9-43a0-a683-884102d8980f",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204 expected\", () => pm.response.to.have.status(204));",
+                  "pm.test(\"Empty body after deletion\", () => pm.expect(pm.response.text()).to.be.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "2599fe43-71e8-4252-acfb-dd0d128da5f5",
+          "name": "W2.6 Verify deleted course is missing",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "{{wfCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "99da6252-c967-46cf-b932-b49870af138e",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 404 expected\", () => pm.response.to.have.status(404));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"Course missing after deletion\", () => pm.expect(data).to.be.an(\"object\"));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "event": []
+    },
+    {
+      "id": "e9f65a3a-e54e-448a-b452-c6c8c74443d0",
+      "name": "WORKFLOW 3 - Roster enrollment (9 sequential requests)",
+      "description": {
+        "content": "Automated, sequential workflow; dynamic IDs from earlier steps.",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "06ef9b91-e3cd-4ecf-8011-2e16e8de7158",
+          "name": "W3.1 Create roster student",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"{{wfRosterStudentName}}\",\"major\":\"CS\",\"gpa\":2.9}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "5476c406-cb46-4c2b-9902-066ca10708ad",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"wfRosterStudentName\",\"Roster Student \"+Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "eb672630-24f9-4b3d-8eb4-e59ea7d1c383",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 201 expected\", () => pm.response.to.have.status(201));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"JSON object response\", () => { pm.expect(data).to.be.an(\"object\"); pm.expect(data).to.not.equal(null); });",
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && data && Number.isInteger(data.id)) pm.collectionVariables.set(\"wfRosterStudentId\", String(data.id));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "af18735d-d938-4c1e-bceb-6165588395d5",
+          "name": "W3.2 Create roster course",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"{{wfRosterCourseName}}\",\"instructor\":1,\"maxSize\":2,\"room\":\"MCS 339\",\"roster\":[]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "3aa2300e-2ba6-4906-8c02-3460d5ff89d9",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"wfRosterCourseName\",\"Roster Course \"+Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "4f25eb61-fd5d-47e9-9141-e2632a1322db",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 201 expected\", () => pm.response.to.have.status(201));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"JSON object response\", () => { pm.expect(data).to.be.an(\"object\"); pm.expect(data).to.not.equal(null); });",
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && data && Number.isInteger(data.id)) pm.collectionVariables.set(\"wfRosterCourseId\", String(data.id));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "8c3385d5-20e2-4ce8-8c48-607be9f96194",
+          "name": "W3.3 Verify zero enrollment",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "getEnrollment",
+                "{{wfRosterCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "e2f34786-6868-4856-b631-ac0d22948c0f",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"JSON response exists\", () => pm.expect(data).to.not.equal(undefined));",
+                  "pm.test(\"Initial enrollment zero\", () => pm.expect(data).to.equal(0));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "1127f368-2211-47e2-b6d3-08cfead8ad1f",
+          "name": "W3.4 Add dynamic student to course",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "addStudent",
+                "{{wfRosterCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{{wfRosterStudentId}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "b6411967-6ad0-407f-aaaa-bd7abcd89b03",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "744e674a-203f-4c29-9cae-aba5fa88778e",
+          "name": "W3.5 Verify enrollment increases",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "getEnrollment",
+                "{{wfRosterCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "8125153b-de4e-41f2-a79c-951e2cd091d5",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"JSON response exists\", () => pm.expect(data).to.not.equal(undefined));",
+                  "pm.test(\"Enrollment increased to one\", () => pm.expect(data).to.equal(1));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "8abd7e98-e5a1-43e9-9540-8c8bf6ee8032",
+          "name": "W3.6 Remove student from course",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "removeStudent",
+                "{{wfRosterCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"studentId\":{{wfRosterStudentId}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "7e52baea-f53a-4540-a055-79ad1a52d5f5",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "e332ff50-ee1a-4e01-97e7-00d76a55f9a5",
+          "name": "W3.7 Verify enrollment returns to zero",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "getEnrollment",
+                "{{wfRosterCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "c688e66b-752a-4b4f-a5f2-131d77858ab5",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 200 expected\", () => pm.response.to.have.status(200));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"JSON response exists\", () => pm.expect(data).to.not.equal(undefined));",
+                  "pm.test(\"Enrollment returned to zero\", () => pm.expect(data).to.equal(0));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "9edc9e83-6787-4335-8886-6fb6131b8008",
+          "name": "W3.8 Delete roster course",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "{{wfRosterCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "aa108390-4c52-4d02-98d1-3062edc478c6",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204 expected\", () => pm.response.to.have.status(204));",
+                  "pm.test(\"Empty body after deletion\", () => pm.expect(pm.response.text()).to.be.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "1dc63ac8-fc9f-425b-9b81-d23654386112",
+          "name": "W3.9 Delete roster student",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "{{wfRosterStudentId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "f41415f8-8dfc-4467-9089-37996a6bd73d",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204 expected\", () => pm.response.to.have.status(204));",
+                  "pm.test(\"Empty body after deletion\", () => pm.expect(pm.response.text()).to.be.empty);"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "event": []
+    },
+    {
+      "id": "ef4f7d25-734d-436a-9bb5-33aec071365a",
+      "name": "BOUNDARY VALUES - GPA, student name, course capacity",
+      "description": {
+        "content": "Automated, sequential workflow; dynamic IDs from earlier steps.",
+        "type": "text/plain"
+      },
+      "item": [
+        {
+          "id": "4259d080-856f-427b-9f61-3ae9f6b4aa4f",
+          "name": "BVA GPA just below minimum",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"GPA Boundary Student\", \"major\": \"CS\", \"gpa\": -0.01}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "4e700415-ca85-4957-af70-6e551740f54b",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 400 expected\", () => pm.response.to.have.status(400));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "9e922eca-ef11-4695-825a-20b085b1cb22",
+          "name": "BVA GPA at minimum",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"GPA Boundary Student\", \"major\": \"CS\", \"gpa\": 0}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "2e34d599-0efb-40c5-b71b-790e6e8aeff0",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 201 expected\", () => pm.response.to.have.status(201));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"JSON object response\", () => { pm.expect(data).to.be.an(\"object\"); pm.expect(data).to.not.equal(null); });",
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && data && Number.isInteger(data.id)) pm.collectionVariables.set(\"bvaStudentId\", String(data.id));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "86b4ff66-f81b-4b05-a005-2bff677e95c6",
+          "name": "BVA GPA at minimum — cleanup",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "{{bvaStudentId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "71d2f208-f4fd-44b0-a401-22fff7d18ff2",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204 expected\", () => pm.response.to.have.status(204));",
+                  "pm.test(\"Empty body after deletion\", () => pm.expect(pm.response.text()).to.be.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "b39b9b39-43b3-4958-afe3-2491b1ac314e",
+          "name": "BVA GPA at maximum",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"GPA Boundary Student\", \"major\": \"CS\", \"gpa\": 4}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "ad28c634-c1b0-4dfe-b799-ae49cbfd4fb5",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 201 expected\", () => pm.response.to.have.status(201));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"JSON object response\", () => { pm.expect(data).to.be.an(\"object\"); pm.expect(data).to.not.equal(null); });",
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && data && Number.isInteger(data.id)) pm.collectionVariables.set(\"bvaStudentId\", String(data.id));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "0632e098-b9be-4220-970c-7e9adc8d05c9",
+          "name": "BVA GPA at maximum — cleanup",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "{{bvaStudentId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "26bcfa44-0d51-4b12-95d3-6204c3b66415",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204 expected\", () => pm.response.to.have.status(204));",
+                  "pm.test(\"Empty body after deletion\", () => pm.expect(pm.response.text()).to.be.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "1fbf4f25-8cbc-46a3-8418-de015e8d15ed",
+          "name": "BVA GPA just above maximum",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"GPA Boundary Student\", \"major\": \"CS\", \"gpa\": 4.01}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "94866203-82d2-45ac-a83a-8ce3928d360b",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 400 expected\", () => pm.response.to.have.status(400));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "5ba2f3a9-c18f-49c0-8d00-df8c7e483cce",
+          "name": "BVA name length below minimum (0)",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"\", \"major\": \"CS\", \"gpa\": 3}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "1b3ca7be-eaa1-4506-81e7-50e19417a36b",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 400 expected\", () => pm.response.to.have.status(400));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "85e26ac0-a6ea-4f8d-91a0-742dec1cb8d5",
+          "name": "BVA name length at minimum (1)",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"N\", \"major\": \"CS\", \"gpa\": 3}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "c8ff69b1-5b3f-44ab-a1d1-9a9e4fb24bce",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 201 expected\", () => pm.response.to.have.status(201));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"JSON object response\", () => { pm.expect(data).to.be.an(\"object\"); pm.expect(data).to.not.equal(null); });",
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && data && Number.isInteger(data.id)) pm.collectionVariables.set(\"bvaStudentId\", String(data.id));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "bdc98118-3eff-499f-a1a1-cc76faeda80a",
+          "name": "BVA name length at minimum (1) — cleanup",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "{{bvaStudentId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "22414275-5b0f-45d7-95e2-29d7241981b1",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204 expected\", () => pm.response.to.have.status(204));",
+                  "pm.test(\"Empty body after deletion\", () => pm.expect(pm.response.text()).to.be.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "d99c49c0-01e2-423a-bdd8-56090e876bde",
+          "name": "BVA name length at maximum (100)",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN\", \"major\": \"CS\", \"gpa\": 3}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "54dc57df-14dc-41b3-97c7-c8c6b032b4dd",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 201 expected\", () => pm.response.to.have.status(201));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"JSON object response\", () => { pm.expect(data).to.be.an(\"object\"); pm.expect(data).to.not.equal(null); });",
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && data && Number.isInteger(data.id)) pm.collectionVariables.set(\"bvaStudentId\", String(data.id));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "d46ed909-cb16-4843-8474-b33888b2a893",
+          "name": "BVA name length at maximum (100) — cleanup",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students",
+                "{{bvaStudentId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "af1459e3-d3d1-4695-9a85-cb13aec6dd84",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 204 expected\", () => pm.response.to.have.status(204));",
+                  "pm.test(\"Empty body after deletion\", () => pm.expect(pm.response.text()).to.be.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "4d9a08af-ceaa-4de4-b8dc-969965463374",
+          "name": "BVA name length above maximum (101)",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "students"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN\", \"major\": \"CS\", \"gpa\": 3}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "c57f9261-3664-4598-9ce8-463ebbe3bd76",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 400 expected\", () => pm.response.to.have.status(400));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "dbad0c44-37d6-4e65-b4f7-5477e9a15399",
+          "name": "BVA course capacity below minimum (-1)",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Capacity Boundary Course\", \"instructor\": 1, \"maxSize\": -1, \"room\": \"MCS 339\", \"roster\": []}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "16e98fbe-1180-4731-bd79-60767dac47d5",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 400 expected\", () => pm.response.to.have.status(400));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "b784362a-e982-4194-8b7e-f289cb53c7c7",
+          "name": "BVA course capacity below minimum (0)",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Capacity Boundary Course\", \"instructor\": 1, \"maxSize\": 0, \"room\": \"MCS 339\", \"roster\": []}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "c9b6a747-5756-4519-a521-d3251b1212f1",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 400 expected\", () => pm.response.to.have.status(400));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "504f9647-9d55-4a56-a3c0-f1ac55320696",
+          "name": "BVA course capacity at minimum (1)",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Capacity Boundary Course\", \"instructor\": 1, \"maxSize\": 1, \"room\": \"MCS 339\", \"roster\": []}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "4f431c71-3552-409f-80aa-e53aeeed2898",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 201 expected\", () => pm.response.to.have.status(201));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"JSON object response\", () => { pm.expect(data).to.be.an(\"object\"); pm.expect(data).to.not.equal(null); });",
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && data && Number.isInteger(data.id)) pm.collectionVariables.set(\"bvaCourseId\", String(data.id));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "fd1cabd5-d0eb-47fd-8424-c07d0f1a9ff3",
+          "name": "BVA course capacity at minimum (1) — cleanup",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "{{bvaCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "a78f6822-a985-4215-ad24-e8b09e296e68",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201 expected\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Empty body after deletion\", () => pm.expect(pm.response.text()).to.be.empty);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "f18db589-cc03-448e-9e28-5ee6e1920102",
+          "name": "BVA course capacity above minimum (2)",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\": \"Capacity Boundary Course\", \"instructor\": 1, \"maxSize\": 2, \"room\": \"MCS 339\", \"roster\": []}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "b47c6266-8752-4a02-bebe-f24dba336625",
+                "type": "text/javascript",
+                "exec": [
+                  "(function () {",
+                  "pm.test(\"HTTP 201 expected\", () => pm.response.to.have.status(201));",
+                  "var data; try { data = pm.response.json(); } catch(e) { data = undefined; }",
+                  "pm.test(\"JSON object response\", () => { pm.expect(data).to.be.an(\"object\"); pm.expect(data).to.not.equal(null); });",
+                  "if (pm.response.code >= 200 && pm.response.code < 300 && data && Number.isInteger(data.id)) pm.collectionVariables.set(\"bvaCourseId\", String(data.id));",
+                  "}());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "37b8593e-95e8-452e-ba85-75ea0aaa4b31",
+          "name": "BVA course capacity above minimum (2) — cleanup",
+          "request": {
+            "url": {
+              "path": [
+                "api",
+                "courses",
+                "{{bvaCourseId}}"
+              ],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "query": [],
+              "variable": []
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "DELETE"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "id": "e60a85b7-1c17-485a-9a8b-61a7438e8427",
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201 expected\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Empty body after deletion\", () => pm.expect(pm.response.text()).to.be.empty);"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "event": []
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "type": "any",
+      "value": "http://localhost:8080",
+      "key": "baseUrl"
+    },
+    {
+      "type": "any",
+      "value": "",
+      "key": "contract"
+    },
+    {
+      "type": "any",
+      "value": "",
+      "key": "autoStudentId"
+    },
+    {
+      "type": "any",
+      "value": "",
+      "key": "autoCourseId"
+    },
+    {
+      "type": "string",
+      "value": "",
+      "key": "wfStudentName"
+    },
+    {
+      "type": "string",
+      "value": "",
+      "key": "wfStudentId"
+    },
+    {
+      "type": "string",
+      "value": "",
+      "key": "wfCourseName"
+    },
+    {
+      "type": "string",
+      "value": "",
+      "key": "wfCourseId"
+    },
+    {
+      "type": "string",
+      "value": "",
+      "key": "wfRosterStudentName"
+    },
+    {
+      "type": "string",
+      "value": "",
+      "key": "wfRosterStudentId"
+    },
+    {
+      "type": "string",
+      "value": "",
+      "key": "wfRosterCourseName"
+    },
+    {
+      "type": "string",
+      "value": "",
+      "key": "wfRosterCourseId"
+    },
+    {
+      "type": "string",
+      "value": "",
+      "key": "bvaStudentId"
+    },
+    {
+      "type": "string",
+      "value": "",
+      "key": "bvaCourseId"
+    }
+  ],
+  "info": {
+    "_postman_id": "ce72e399-3a58-4e9f-9a80-dd0838b2e6b8",
+    "name": "Student Registration API - Complete Contract and Dynamic Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": {
+      "content": "Original 38 requests, plus 3 dynamic workflows (6,6,9 requests), and 12 explicit boundary input cases with cleanup. Run entire collection in order. HTTP contract violations intentionally fail.",
+      "type": "text/plain"
+    }
+  }
+}
